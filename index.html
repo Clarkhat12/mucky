@@ -12,99 +12,114 @@
 <body>
     <script>
         const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        document.body.appendChild(canvas);
+const ctx = canvas.getContext("2d");
+document.body.appendChild(canvas);
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
-        let playerImage = new Image();
-        playerImage.src = "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMGh6M2UxbjcwbThzY3hhbG1lczV5Y2lsMWJvNm1jNGZwcGQ3bTZsaiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l2JhIUyUs8KDCCf3W/giphy.gif"; 
-        playerImage.onload = function() {
-            requestAnimationFrame(update);
-        };
+let playerImage = new Image();
+playerImage.src = "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMGh6M2UxbjcwbThzY3hhbG1lczV5Y2lsMWJvNm1jNGZwcGQ3bTZsaiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/l2JhIUyUs8KDCCf3W/giphy.gif"; 
+playerImage.onload = function() {
+    requestAnimationFrame(update);
+};
 
-        let player = {
-            x: 50,
-            y: canvas.height - 100,
-            width: 60,
-            height: 60,
-            speed: 5,
-        };
+let player = {
+    x: 50,
+    y: canvas.height - 100,
+    width: 60,
+    height: 60,
+    speed: 5,
+};
 
-        let snowballs = [];
-        let score = 0;
-        let gameOver = false;
+let snowballs = [];
+let score = 0;
+let gameOver = false;
+let spawnInterval = 1500; // Snowball spawn interval (decreases over time)
+let difficultyMultiplier = 1; // Controls game difficulty increase
 
-        document.addEventListener("touchstart", (event) => {
-            let touchY = event.touches[0].clientY;
-            if (touchY < canvas.height / 2 && player.y > 0) {
-                player.y -= player.speed * 10;
-            } else if (touchY >= canvas.height / 2 && player.y < canvas.height - player.height) {
-                player.y += player.speed * 10;
+document.addEventListener("touchstart", (event) => {
+    let touchY = event.touches[0].clientY;
+    if (touchY < canvas.height / 2 && player.y > 0) {
+        player.y -= player.speed * 10;
+    } else if (touchY >= canvas.height / 2 && player.y < canvas.height - player.height) {
+        player.y += player.speed * 10;
+    }
+});
+
+function spawnSnowball() {
+    let size = Math.random() * 40 + 20;
+    snowballs.push({
+        x: canvas.width,
+        y: Math.random() * (canvas.height - size),
+        width: size,
+        height: size,
+        speed: (Math.random() * 3 + 2) * difficultyMultiplier, // Increase speed dynamically
+    });
+}
+
+function update() {
+    if (gameOver) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "white";
+    ctx.font = "30px Arial";
+    ctx.fillText("Jim Sneef Mission ❄️", canvas.width / 2 - 100, 50);
+    ctx.fillText("Score: " + score, canvas.width / 2 - 50, 90);
+
+    ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
+
+    snowballs.forEach((snowball, index) => {
+        snowball.x -= snowball.speed;
+        ctx.fillStyle = "white";
+        ctx.beginPath();
+        ctx.arc(snowball.x, snowball.y + snowball.height / 2, snowball.width / 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        if (snowball.x + snowball.width < 0) {
+            snowballs.splice(index, 1);
+            score++;
+            
+            // Increase difficulty as score rises
+            if (score % 10 === 0) {
+                difficultyMultiplier += 0.2; // Increase snowball speed
+                spawnInterval = Math.max(500, spawnInterval - 100); // Reduce spawn interval
+                clearInterval(spawnLoop);
+                spawnLoop = setInterval(spawnSnowball, spawnInterval);
             }
-        });
-
-        function spawnSnowball() {
-            let size = Math.random() * 40 + 20;
-            snowballs.push({
-                x: canvas.width,
-                y: Math.random() * (canvas.height - size),
-                width: size,
-                height: size,
-                speed: Math.random() * 5 + 2,
-            });
         }
-
-        function update() {
-            if (gameOver) return;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = "white";
-            ctx.font = "30px Arial";
-            ctx.fillText("Jim Sneef Mission ❄️", canvas.width / 2 - 100, 50);
-            ctx.fillText("Score: " + score, canvas.width / 2 - 50, 90);
-
-            ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
-
-            snowballs.forEach((snowball, index) => {
-                snowball.x -= snowball.speed;
-                ctx.fillStyle = "white";
-                ctx.beginPath();
-                ctx.arc(snowball.x, snowball.y + snowball.height / 2, snowball.width / 2, 0, Math.PI * 2);
-                ctx.fill();
-                
-                if (snowball.x + snowball.width < 0) {
-                    snowballs.splice(index, 1);
-                    score++;
-                }
-                
-                if (
-                    player.x < snowball.x + snowball.width &&
-                    player.x + player.width > snowball.x &&
-                    player.y < snowball.y + snowball.height &&
-                    player.y + player.height > snowball.y
-                ) {
-                    gameOver = true;
-                    ctx.fillStyle = "red";
-                    ctx.fillText("Game Over!", canvas.width / 2 - 50, canvas.height / 2);
-                }
-            });
-
-            requestAnimationFrame(update);
+        
+        if (
+            player.x < snowball.x + snowball.width &&
+            player.x + player.width > snowball.x &&
+            player.y < snowball.y + snowball.height &&
+            player.y + player.height > snowball.y
+        ) {
+            gameOver = true;
+            ctx.fillStyle = "red";
+            ctx.fillText("Game Over!", canvas.width / 2 - 50, canvas.height / 2);
         }
+    });
 
-        document.addEventListener("click", () => {
-            if (gameOver) {
-                snowballs = [];
-                score = 0;
-                gameOver = false;
-                player.y = canvas.height - 100;
-                requestAnimationFrame(update);
-            }
-        });
+    requestAnimationFrame(update);
+}
 
-        setInterval(spawnSnowball, 1500);
+document.addEventListener("click", () => {
+    if (gameOver) {
+        snowballs = [];
+        score = 0;
+        gameOver = false;
+        difficultyMultiplier = 1;
+        spawnInterval = 1500;
+        player.y = canvas.height - 100;
+        clearInterval(spawnLoop);
+        spawnLoop = setInterval(spawnSnowball, spawnInterval);
+        requestAnimationFrame(update);
+    }
+});
+
+let spawnLoop = setInterval(spawnSnowball, spawnInterval);
+
     </script>
 </body>
 </html>
